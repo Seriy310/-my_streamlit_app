@@ -1,6 +1,7 @@
 import streamlit as st
 import csv
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Заголовок програми
 st.set_page_config(page_title="Аналіз інвестиції та кредиту 💰", layout="centered", initial_sidebar_state="expanded")
@@ -13,14 +14,7 @@ st.markdown(
     """
 )
 
-# Додавання бокової панелі з інтерактивними елементами
-st.sidebar.title("Меню")
-st.sidebar.markdown("[🏠 Головна сторінка](#)")
-
-# Вибір типу кредиту (якщо потрібно)
-credit_type = st.sidebar.selectbox("Тип кредиту", ["Іпотечний", "Автокредит", "Кредитна картка"])
-
-# Виведення позиції для "Кредит" у правій частині
+# Вибір кредиту (тільки одна форма без вибору типу)
 credit_section = st.empty()  # Окрема зона для відображення іконки або кнопки
 
 credit_section.markdown(
@@ -95,10 +89,15 @@ def save_payment(payment_date, payment_amount):
         writer.writerow([payment_date, payment_amount])
 
 # Графік для візуалізації окупності
-x_data = [i for i in range(loan_term_months)]
-y_data = [credit_amount - (monthly_payment_loan + monthly_insurance) * i for i in range(loan_term_months)]
+x_data = np.arange(1, loan_term_months + 1)
+y_data = [credit_amount - (monthly_payment_loan + monthly_insurance) * i for i in x_data]
 
-fig = go.Figure(data=[go.Scatter(x=x_data, y=y_data, mode='lines', name="Залишок по кредиту")])
-fig.update_layout(title='Залишок по кредиту з часом', xaxis_title='Місяці', yaxis_title='Залишок по кредиту (злотих)')
-st.plotly_chart(fig)
+fig, ax = plt.subplots()
+ax.plot(x_data, y_data, label="Залишок по кредиту")
+ax.set_xlabel('Місяці')
+ax.set_ylabel('Залишок по кредиту (злотих)')
+ax.set_title('Залишок по кредиту з часом')
+ax.legend()
 
+# Відображення графіка в Streamlit
+st.pyplot(fig)
