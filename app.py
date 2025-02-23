@@ -56,11 +56,22 @@ else:
     # Кнопка для розрахунку
     if st.button("Розрахувати", use_container_width=True):
         try:
-            # Обчислення фінансових показників
-            royalty_decimal = royalty_percent / 100  # Конвертація відсотків у десяткове число
-            monthly_total_payment = monthly_payment_loan + monthly_insurance  # Загальні витрати по кредиту
-            total_payment_over_loan_term = monthly_total_payment * loan_term_months  # Загальна сума виплат
-            overpayment = total_payment_over_loan_term - credit_amount  # Переплата по кредиту
+            # Перевірка, чи всі необхідні поля були введені
+            if credit_enabled:
+                if monthly_payment_loan > 0 and monthly_insurance > 0:
+                    # Обчислення фінансових показників
+                    royalty_decimal = royalty_percent / 100  # Конвертація відсотків у десяткове число
+                    monthly_total_payment = monthly_payment_loan + monthly_insurance  # Загальні витрати по кредиту
+                    total_payment_over_loan_term = monthly_total_payment * loan_term_months  # Загальна сума виплат
+                    overpayment = total_payment_over_loan_term - credit_amount  # Переплата по кредиту
+                else:
+                    st.error("Будь ласка, введіть всі дані про кредит (платіж та страховка).")
+                    return
+            else:
+                # Якщо не включено, значення кредиту не використовуються
+                overpayment = 0
+                monthly_total_payment = 0  # Без кредиту
+                total_payment_over_loan_term = 0
 
             royalty_payment = monthly_income * royalty_decimal  # Щомісячне роялті
             net_profit = monthly_income - monthly_total_payment - royalty_payment  # Чистий прибуток
@@ -89,15 +100,16 @@ def save_payment(payment_date, payment_amount):
         writer.writerow([payment_date, payment_amount])
 
 # Графік для візуалізації окупності
-x_data = np.arange(1, loan_term_months + 1)
-y_data = [credit_amount - (monthly_payment_loan + monthly_insurance) * i for i in x_data]
+if credit_enabled:
+    x_data = np.arange(1, loan_term_months + 1)
+    y_data = [credit_amount - (monthly_payment_loan + monthly_insurance) * i for i in x_data]
 
-fig, ax = plt.subplots()
-ax.plot(x_data, y_data, label="Залишок по кредиту")
-ax.set_xlabel('Місяці')
-ax.set_ylabel('Залишок по кредиту (злотих)')
-ax.set_title('Залишок по кредиту з часом')
-ax.legend()
+    fig, ax = plt.subplots()
+    ax.plot(x_data, y_data, label="Залишок по кредиту")
+    ax.set_xlabel('Місяці')
+    ax.set_ylabel('Залишок по кредиту (злотих)')
+    ax.set_title('Залишок по кредиту з часом')
+    ax.legend()
 
-# Відображення графіка в Streamlit
-st.pyplot(fig)
+    # Відображення графіка в Streamlit
+    st.pyplot(fig)
