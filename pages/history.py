@@ -15,7 +15,7 @@ if os.path.exists(file_name):
         for row in reader:
             expenses.append({
                 'Назва': row['Назва'],
-                'Сума': float(row['Сума']),
+                'Сума': f"{float(row['Сума']):.2f} zł",
                 'Дата': row['Дата']
             })
 
