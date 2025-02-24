@@ -32,41 +32,57 @@ if 'expenses' not in st.session_state:
 
 # Видатки
 st.subheader("Видатки:")
-total_expenses = sum(exp['amount'] for exp in st.session_state.expenses)
+total_expenses = sum(float(exp['amount']) for exp in st.session_state.expenses)  # Ensure correct summation
 st.write(f"Загальна сума видатків: {total_expenses:.2f} zł" if total_expenses > 0 else "Видатків немає")
 
 # Кнопка переходу до історії видатків
 if st.button("📜 Переглянути / Редагувати історію видатків"):
     st.switch_page("pages/history.py")
 
-# Форма для додавання видатків (Список)
-with st.expander("➕ Додати нові видатки"):
-    with st.form("add_expense_form"):
-        expense_list = st.text_area(
-            "Введіть список видатків у форматі: Назва - Сума (кожен рядок окремий)",
-            placeholder="Кава - 50\nОренда - 1200\nЗакупівля - 300"
-        )
-        expense_date = st.date_input("Дата видатків", min_value=datetime.today(), value=datetime.today())
+# Форма для додавання видатків (динамічна таблиця)
+st.subheader("➕ Додати нові видатки")
 
-        submit_button = st.form_submit_button("Зберегти видатки")
-        
-        if submit_button and expense_list.strip():
-            new_expenses = []
-            for line in expense_list.split("\n"):
-                parts = line.split("-")
-                if len(parts) == 2:
-                    name, amount_str = parts[0].strip(), parts[1].strip()
-                    try:
-                        amount = round(float(amount_str.replace("zł", "").strip()) / 10) * 10  # Округлення до десятків
-                        new_expenses.append({'name': name, 'amount': amount, 'date': expense_date.strftime("%Y-%m-%d")})
-                    except ValueError:
-                        st.error(f"Помилка у рядку: {line}")
-            
-            if new_expenses:
-                st.session_state.expenses.extend(new_expenses)
-                save_expenses(new_expenses)
-                st.success("✅ Видатки збережено!")
-                st.rerun()  # Оновлення сторінки після додавання
+if "new_expenses" not in st.session_state:
+    st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
+
+to_remove = []
+
+for i, exp in enumerate(st.session_state.new_expenses):
+    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+    name = col1.text_input(f"Назва {i+1}", value=exp["name"], key=f"new_name_{i}")
+    amount = col2.text_input(f"Сума {i+1} (zł)", value=str(exp["amount"]), key=f"new_amount_{i}")
+    date = col3.date_input(f"Дата {i+1}", value=datetime.strptime(exp["date"], "%Y-%m-%d"), key=f"new_date_{i}")
+    
+    if name.strip() and amount.strip():  # If filled, prepare for the next entry
+        if i == len(st.session_state.new_expenses) - 1:
+            st.session_state.new_expenses.append({"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")})
+
+    try:
+        amount = round(float(amount.replace("zł", "").strip()) / 10) * 10
+    except ValueError:
+        amount = None
+        st.error(f"Помилка у рядку {i+1}: Сума повинна бути числом.")
+
+    st.session_state.new_expenses[i] = {"name": name, "amount": amount, "date": date.strftime("%Y-%m-%d")}
+
+    delete_button = col4.button("❌", key=f"remove_{i}")
+    if delete_button:
+        to_remove.append(i)
+
+# Видалення порожніх записів
+for index in sorted(to_remove, reverse=True):
+    del st.session_state.new_expenses[index]
+
+# Кнопка для збереження видатків
+if st.button("💾 Зберегти видатки"):
+    valid_expenses = [exp for exp in st.session_state.new_expenses if exp["name"] and exp["amount"]]
+    
+    if valid_expenses:
+        st.session_state.expenses.extend(valid_expenses)
+        save_expenses(valid_expenses)
+        st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
+        st.success("✅ Видатки збережено!")
+        st.rerun()  # Оновлення сторінки після додавання
 
 # Податок
 st.subheader("Податок:")
