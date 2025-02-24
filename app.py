@@ -8,27 +8,15 @@ st.set_page_config(page_title="Інвестиція в кав'ярню", layout=
 st.title("Інвестиція в кав'ярню")
 
 # Функція для збереження видатків у CSV файл
-def save_expense(expense, update=False):
+def save_expense(expense):
     file_name = 'expenses_history.csv'
-    if update:
-        # Оновлення запису в файлі (перезапис всіх записів)
-        with open(file_name, mode='w', newline='') as file:
-            writer = csv.writer(file)
+    with open(file_name, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        if file.tell() == 0:  # Якщо файл порожній, додаємо заголовки
             writer.writerow(["Назва", "Сума", "Дата"])
-            for exp in st.session_state.expenses:
-                writer.writerow([exp['name'], exp['amount'], exp['date']])
-    else:
-        # Додавання нового видатку до файлу
-        with open(file_name, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            if file.tell() == 0:  # Якщо файл порожній, додаємо заголовки
-                writer.writerow(["Назва", "Сума", "Дата"])
-            writer.writerow([expense['name'], expense['amount'], expense['date']])
+        writer.writerow([expense['name'], expense['amount'], expense['date']])
 
-# Видатки
-st.subheader("Видатки:")
-
-# Завантаження витрат із файлу, якщо вони існують
+# Завантаження витрат із файлу
 if 'expenses' not in st.session_state:
     st.session_state.expenses = []
     if os.path.exists("expenses_history.csv"):
@@ -41,13 +29,14 @@ if 'expenses' not in st.session_state:
                     'date': row['Дата']
                 })
 
-# Показуємо суму видатків або повідомлення про їх відсутність
-total_expenses = sum(exp['amount'] for exp in st.session_state.expenses) if st.session_state.expenses else 0
+# Видатки
+st.subheader("Видатки:")
+total_expenses = sum(exp['amount'] for exp in st.session_state.expenses)
 st.write(f"Загальна сума видатків: {total_expenses} злотих" if total_expenses > 0 else "Видатків немає")
 
-# Відображення видатків у таблиці
-if st.session_state.expenses:
-    st.table(st.session_state.expenses)
+# Кнопка переходу до історії видатків
+if st.button("📜 Переглянути історію видатків"):
+    st.switch_page("pages/history.py")
 
 # Форма для додавання видатків
 with st.expander("➕ Додати новий видаток"):
@@ -55,7 +44,6 @@ with st.expander("➕ Додати новий видаток"):
         expense_name = st.text_input("Назва видатку")
         expense_amount_str = st.text_input("Сума видатку", placeholder="Введіть суму в злотих")
 
-        # Перевірка введеної суми
         try:
             expense_amount = float(expense_amount_str.replace("zł", "").strip()) if expense_amount_str else None
         except ValueError:
@@ -64,7 +52,6 @@ with st.expander("➕ Додати новий видаток"):
 
         expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
 
-        # Кнопка для збереження видатку
         submit_button = st.form_submit_button("Зберегти видаток")
         
         if submit_button and expense_amount is not None:
@@ -76,10 +63,11 @@ with st.expander("➕ Додати новий видаток"):
             st.session_state.expenses.append(new_expense)
             save_expense(new_expense)  # Збереження видатку
             st.success("✅ Видаток збережено!")
+            st.rerun()  # Оновлюємо сторінку після додавання
 
 # Податок
 st.subheader("Податок:")
-tax_percentage = st.slider("Оберіть відсоток податку:", 0, 100, 5)
+tax_percentage = st.number_input("Введіть відсоток податку:", min_value=0.0, max_value=100.0, value=5.0, step=0.5)
 tax_amount = total_expenses * (tax_percentage / 100) if total_expenses > 0 else 0
 st.write(f"Податок ({tax_percentage}%): {tax_amount} злотих" if total_expenses > 0 else "Податок буде розраховано після додавання видатків.")
 
@@ -87,6 +75,6 @@ st.write(f"Податок ({tax_percentage}%): {tax_amount} злотих" if tot
 st.subheader("Чистий заробіток:")
 income = st.number_input("Введіть щомісячний дохід (злотих):", min_value=0.0, step=100.0)
 
-# Чистий прибуток
+# Чистий прибуток (динамічне оновлення)
 net_profit = income - total_expenses - tax_amount
 st.write(f"💰 Чистий прибуток: {net_profit} злотих")
