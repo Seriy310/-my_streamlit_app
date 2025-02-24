@@ -24,13 +24,25 @@ else:
 if st.button("Додати видаток"):
     with st.form("add_expense_form"):
         expense_name = st.text_input("Назва видатку")
-        expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
+        
+        # Введення суми з "zł" на кінці
+        expense_amount_str = st.text_input("Сума видатку", placeholder="Введіть суму в злотих")
+        if expense_amount_str:
+            # Перевірка введеного числа
+            try:
+                expense_amount = float(expense_amount_str.replace("zł", "").strip())  # Видаляємо "zł" і пробіли
+            except ValueError:
+                expense_amount = None
+                st.error("Будь ласка, введіть правильну суму без символу 'zł' або з символом після суми.")
+        else:
+            expense_amount = None
+
         expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
 
         # Додавання видатку за натисканням кнопки
         submit_button = st.form_submit_button("Зберегти видаток")
         
-        if submit_button:
+        if submit_button and expense_amount is not None:
             new_expense = {
                 'name': expense_name,
                 'amount': expense_amount,
@@ -39,6 +51,8 @@ if st.button("Додати видаток"):
             st.session_state.expenses.append(new_expense)
             save_expense(new_expense)  # Зберігаємо видаток у історію
             st.success("Видаток збережено!")
+        elif submit_button and expense_amount is None:
+            st.error("Сума видатку має бути введена коректно.")
 
 # Виведення списку всіх видатків з можливістю редагування
 st.subheader("Історія видатків:")
