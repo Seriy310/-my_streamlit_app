@@ -8,31 +8,55 @@ st.title("Інвестиція в кав'ярню")
 
 # Видатки
 st.subheader("Видатки:")
+
+# Перевірка наявності видатків
 if 'expenses' not in st.session_state:
     st.session_state.expenses = []
 
-# Показуємо поточні видатки
-total_expenses = sum([exp['amount'] for exp in st.session_state.expenses])
-st.write(f"Загальна сума видатків: {total_expenses} злотих")
+# Показуємо суму видатків або повідомлення про їх відсутність
+if st.session_state.expenses:
+    total_expenses = sum([exp['amount'] for exp in st.session_state.expenses])
+    st.write(f"Загальна сума видатків: {total_expenses} злотих")
+else:
+    st.write("Видатків немає")
+    
+# Кнопка для додавання видатків
+add_expense_button = st.button("Додати видаток")
 
-# Опція для додавання видатків
-add_expense = st.button("Додати видаток")
+if not st.session_state.expenses:
+    # Якщо видатків немає, натискання на текст дозволяє додати нові
+    if st.button("Видатків немає - натисніть для додавання видатків"):
+        with st.expander("Додати видатки"):
+            expense_name = st.text_input("Назва видатку")
+            expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
+            expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
 
-if add_expense:
-    with st.expander("Додати видаток"):
-        expense_name = st.text_input("Назва видатку")
-        expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
-        expense_date = st.date_input("Дата видатку", min_value=datetime.today())
+            if st.button("Зберегти видаток"):
+                new_expense = {
+                    'name': expense_name,
+                    'amount': expense_amount,
+                    'date': expense_date
+                }
+                st.session_state.expenses.append(new_expense)
+                save_expense(new_expense)  # Зберігаємо видаток у історію
+                st.success("Видаток збережено!")
+else:
+    # Якщо є видатки, вони відображаються та є можливість додавати нові
+    if add_expense_button:
+        with st.expander("Додати видатки"):
+            expense_name = st.text_input("Назва видатку")
+            expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
+            expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
 
-        if st.button("Зберегти видаток"):
-            new_expense = {
-                'name': expense_name,
-                'amount': expense_amount,
-                'date': expense_date
-            }
-            st.session_state.expenses.append(new_expense)
-            save_expense(new_expense)  # Зберігаємо видаток у історію
-            st.success("Видаток збережено!")
+            if st.button("Зберегти видаток"):
+                new_expense = {
+                    'name': expense_name,
+                    'amount': expense_amount,
+                    'date': expense_date
+                }
+                st.session_state.expenses.append(new_expense)
+                save_expense(new_expense)  # Зберігаємо видаток у історію
+                st.success("Видаток збережено!")
 
 # Виведення списку всіх видатків з можливістю редагування
 st.subheader("Історія видатків:")
@@ -53,8 +77,6 @@ if st.session_state.expenses:
                     expense['date'] = new_date
                     save_expense(expense, update=True)  # Оновлюємо видаток в історії
                     st.success("Видаток оновлено!")
-else:
-    st.write("Немає збережених видатків.")
 
 # Функція для збереження видатків у CSV файл
 def save_expense(expense, update=False):
@@ -73,19 +95,3 @@ def save_expense(expense, update=False):
             if file.tell() == 0:  # Якщо файл порожній, додаємо заголовки
                 writer.writerow(["Назва", "Сума", "Дата"])
             writer.writerow([expense['name'], expense['amount'], expense['date']])
-
-# Дохід
-st.subheader("Дохід:")
-income = st.number_input("Введіть щомісячний дохід (злотих):", min_value=0.0, step=100.0)
-
-if st.button("Розрахувати"):
-    st.write(f"Доход: {income} злотих")
-
-# Кредит
-st.subheader("Кредит:")
-credit = st.checkbox("Маєте кредит?")
-if credit:
-    credit_amount = st.number_input("Сума кредиту (злотих):", min_value=0.0, step=100.0)
-    credit_term = st.number_input("Термін кредиту (місяців):", min_value=1, step=1)
-    st.write(f"Сума кредиту: {credit_amount} злотих")
-    st.write(f"Термін кредиту: {credit_term} місяців")
