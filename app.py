@@ -8,13 +8,14 @@ st.set_page_config(page_title="Інвестиція в кав'ярню", layout=
 st.title("Інвестиція в кав'ярню")
 
 # Функція для збереження видатків у CSV файл
-def save_expense(expense):
+def save_expenses(expenses):
     file_name = 'expenses_history.csv'
     with open(file_name, mode='a', newline='') as file:
         writer = csv.writer(file)
         if file.tell() == 0:  # Якщо файл порожній, додаємо заголовки
             writer.writerow(["Назва", "Сума", "Дата"])
-        writer.writerow([expense['name'], expense['amount'], expense['date']])
+        for expense in expenses:
+            writer.writerow([expense['name'], expense['amount'], expense['date']])
 
 # Завантаження витрат із файлу
 if 'expenses' not in st.session_state:
@@ -25,7 +26,7 @@ if 'expenses' not in st.session_state:
             for row in reader:
                 st.session_state.expenses.append({
                     'name': row['Назва'],
-                    'amount': float(row['Сума']),
+                    'amount': round(float(row['Сума']) / 10) * 10,  # Округлення до десятків
                     'date': row['Дата']
                 })
 
@@ -35,35 +36,37 @@ total_expenses = sum(exp['amount'] for exp in st.session_state.expenses)
 st.write(f"Загальна сума видатків: {total_expenses:.2f} zł" if total_expenses > 0 else "Видатків немає")
 
 # Кнопка переходу до історії видатків
-if st.button("📜 Переглянути історію видатків"):
+if st.button("📜 Переглянути / Редагувати історію видатків"):
     st.switch_page("pages/history.py")
 
-# Форма для додавання видатків
-with st.expander("➕ Додати новий видаток"):
+# Форма для додавання видатків (Список)
+with st.expander("➕ Додати нові видатки"):
     with st.form("add_expense_form"):
-        expense_name = st.text_input("Назва видатку")
-        expense_amount_str = st.text_input("Сума видатку", placeholder="Введіть суму в злотих (наприклад, 50)")
+        expense_list = st.text_area(
+            "Введіть список видатків у форматі: Назва - Сума (кожен рядок окремий)",
+            placeholder="Кава - 50\nОренда - 1200\nЗакупівля - 300"
+        )
+        expense_date = st.date_input("Дата видатків", min_value=datetime.today(), value=datetime.today())
 
-        try:
-            expense_amount = float(expense_amount_str.replace("zł", "").strip()) if expense_amount_str else None
-        except ValueError:
-            expense_amount = None
-            st.error("Будь ласка, введіть правильну суму.")
-
-        expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
-
-        submit_button = st.form_submit_button("Зберегти видаток")
+        submit_button = st.form_submit_button("Зберегти видатки")
         
-        if submit_button and expense_amount is not None:
-            new_expense = {
-                'name': expense_name,
-                'amount': expense_amount,
-                'date': expense_date.strftime("%Y-%m-%d")
-            }
-            st.session_state.expenses.append(new_expense)
-            save_expense(new_expense)  # Збереження видатку
-            st.success("✅ Видаток збережено!")
-            st.rerun()  # Оновлюємо сторінку після додавання
+        if submit_button and expense_list.strip():
+            new_expenses = []
+            for line in expense_list.split("\n"):
+                parts = line.split("-")
+                if len(parts) == 2:
+                    name, amount_str = parts[0].strip(), parts[1].strip()
+                    try:
+                        amount = round(float(amount_str.replace("zł", "").strip()) / 10) * 10  # Округлення до десятків
+                        new_expenses.append({'name': name, 'amount': amount, 'date': expense_date.strftime("%Y-%m-%d")})
+                    except ValueError:
+                        st.error(f"Помилка у рядку: {line}")
+            
+            if new_expenses:
+                st.session_state.expenses.extend(new_expenses)
+                save_expenses(new_expenses)
+                st.success("✅ Видатки збережено!")
+                st.rerun()  # Оновлення сторінки після додавання
 
 # Податок
 st.subheader("Податок:")
