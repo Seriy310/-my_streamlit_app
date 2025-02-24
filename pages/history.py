@@ -15,7 +15,7 @@ if os.path.exists(file_name):
         for row in reader:
             expenses.append({
                 'Назва': row['Назва'],
-                'Сума': round(float(row['Сума']) / 10) * 10,  # Округлення до десятків
+                'Сума': round(float(row['Сума']) / 10) * 10,  # Ensure float values
                 'Дата': row['Дата']
             })
 
@@ -26,7 +26,7 @@ if expenses:
     for i, exp in enumerate(expenses):
         col1, col2, col3 = st.columns([3, 2, 2])
         name = col1.text_input(f"Назва {i+1}", value=exp["Назва"], key=f"name_{i}")
-        amount = col2.number_input(f"Сума {i+1}", value=exp["Сума"], step=10.0, key=f"amount_{i}")
+        amount = col2.number_input(f"Сума {i+1}", value=float(exp["Сума"]), step=10.0, key=f"amount_{i}")
         date = col3.text_input(f"Дата {i+1}", value=exp["Дата"], key=f"date_{i}")
         edited_expenses.append({'name': name, 'amount': round(amount / 10) * 10, 'date': date})
 
