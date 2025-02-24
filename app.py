@@ -22,12 +22,15 @@ else:
 
 # Кнопка для додавання видатків
 if st.button("Додати видаток"):
-    with st.expander("Додати видаток"):
+    with st.form("add_expense_form"):
         expense_name = st.text_input("Назва видатку")
         expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
         expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
 
-        if st.button("Зберегти видаток"):
+        # Додавання видатку за натисканням кнопки
+        submit_button = st.form_submit_button("Зберегти видаток")
+        
+        if submit_button:
             new_expense = {
                 'name': expense_name,
                 'amount': expense_amount,
