@@ -56,8 +56,13 @@ if st.button("Додати видаток"):
 # Податок
 st.subheader("Податок:")
 tax_percentage = st.slider("Оберіть відсоток податку:", 0, 100, 5)
-tax_amount = total_expenses * (tax_percentage / 100)
-st.write(f"Податок ({tax_percentage}%): {tax_amount} злотих")
+
+# Перевірка наявності видатків перед обчисленням податку
+if total_expenses > 0:
+    tax_amount = total_expenses * (tax_percentage / 100)
+    st.write(f"Податок ({tax_percentage}%): {tax_amount} злотих")
+else:
+    st.write("Податок буде розраховано після додавання видатків.")
 
 # Чистий заробіток
 st.subheader("Чистий заробіток:")
