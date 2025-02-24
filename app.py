@@ -19,44 +19,23 @@ if st.session_state.expenses:
     st.write(f"Загальна сума видатків: {total_expenses} злотих")
 else:
     st.write("Видатків немає")
-    
+
 # Кнопка для додавання видатків
-add_expense_button = st.button("Додати видаток")
+if st.button("Додати видаток"):
+    with st.expander("Додати видаток"):
+        expense_name = st.text_input("Назва видатку")
+        expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
+        expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
 
-if not st.session_state.expenses:
-    # Якщо видатків немає, натискання на текст дозволяє додати нові
-    if st.button("Видатків немає - натисніть для додавання видатків"):
-        with st.expander("Додати видатки"):
-            expense_name = st.text_input("Назва видатку")
-            expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
-            expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
-
-            if st.button("Зберегти видаток"):
-                new_expense = {
-                    'name': expense_name,
-                    'amount': expense_amount,
-                    'date': expense_date
-                }
-                st.session_state.expenses.append(new_expense)
-                save_expense(new_expense)  # Зберігаємо видаток у історію
-                st.success("Видаток збережено!")
-else:
-    # Якщо є видатки, вони відображаються та є можливість додавати нові
-    if add_expense_button:
-        with st.expander("Додати видатки"):
-            expense_name = st.text_input("Назва видатку")
-            expense_amount = st.number_input("Сума видатку (злотих)", min_value=0.0, step=50.0)
-            expense_date = st.date_input("Дата видатку", min_value=datetime.today(), value=datetime.today())
-
-            if st.button("Зберегти видаток"):
-                new_expense = {
-                    'name': expense_name,
-                    'amount': expense_amount,
-                    'date': expense_date
-                }
-                st.session_state.expenses.append(new_expense)
-                save_expense(new_expense)  # Зберігаємо видаток у історію
-                st.success("Видаток збережено!")
+        if st.button("Зберегти видаток"):
+            new_expense = {
+                'name': expense_name,
+                'amount': expense_amount,
+                'date': expense_date
+            }
+            st.session_state.expenses.append(new_expense)
+            save_expense(new_expense)  # Зберігаємо видаток у історію
+            st.success("Видаток збережено!")
 
 # Виведення списку всіх видатків з можливістю редагування
 st.subheader("Історія видатків:")
