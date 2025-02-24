@@ -1,99 +1,39 @@
-import streamlit as st
-import csv
-import os
-from datetime import datetime
+# Re-import necessary libraries after execution state reset
+import matplotlib.pyplot as plt
 
-# Заголовок програми
-st.set_page_config(page_title="Інвестиція в кав'ярню", layout="centered")
-st.title("Інвестиція в кав'ярню")
+# Create a mock-up layout of the interactive analytics dashboard
+fig, ax = plt.subplots(figsize=(10, 8))
+ax.set_xlim(0, 10)
+ax.set_ylim(0, 10)
+ax.axis("off")
 
-# Функція для збереження видатків у CSV файл
-def save_expenses(expenses):
-    file_name = 'expenses_history.csv'
-    with open(file_name, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        if file.tell() == 0:  # Якщо файл порожній, додаємо заголовки
-            writer.writerow(["Назва", "Сума", "Дата"])
-        for expense in expenses:
-            writer.writerow([expense['name'], expense['amount'], expense['date']])
+# Title
+ax.text(5, 9.5, "📊 Аналітика витрат та прибутку", fontsize=14, fontweight="bold", ha="center")
 
-# Завантаження витрат із файлу
-if 'expenses' not in st.session_state:
-    st.session_state.expenses = []
-    if os.path.exists("expenses_history.csv"):
-        with open("expenses_history.csv", newline='') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                st.session_state.expenses.append({
-                    'name': row['Назва'],
-                    'amount': round(float(row['Сума']) / 10) * 10,  # Округлення до десятків
-                    'date': row['Дата']
-                })
+# Dropdown for selecting date range
+ax.text(1, 8.8, "📅 Виберіть період:", fontsize=12, fontweight="bold")
+ax.add_patch(plt.Rectangle((3, 8.6), 4, 0.5, fill=True, color="lightgray", alpha=0.3))
+ax.text(5, 8.85, "[Dropdown - вибір періоду]", fontsize=10, ha="center")
 
-# Видатки
-st.subheader("Видатки:")
-total_expenses = sum(float(exp['amount']) for exp in st.session_state.expenses)  # Ensure correct summation
-st.write(f"Загальна сума видатків: {total_expenses:.2f} zł" if total_expenses > 0 else "Видатків немає")
+# Section: Pie Chart (Expense Distribution)
+ax.text(1, 7.8, "🍩 Розподіл витрат", fontsize=12, fontweight="bold")
+ax.add_patch(plt.Rectangle((1, 5.8), 4, 1.8, fill=True, color="lightgray", alpha=0.3))  # Placeholder for pie chart
+ax.text(3, 6.7, "[Кругова діаграма]", fontsize=10, ha="center")
 
-# Кнопка переходу до історії видатків
-if st.button("📜 Переглянути / Редагувати історію видатків"):
-    st.switch_page("pages/history.py")
+# Section: Bar Chart (Income vs Expenses)
+ax.text(6, 7.8, "📈 Динаміка доходів та витрат", fontsize=12, fontweight="bold")
+ax.add_patch(plt.Rectangle((5.5, 5.8), 4, 1.8, fill=True, color="lightgray", alpha=0.3))  # Placeholder for bar chart
+ax.text(7.5, 6.7, "[Стовпчиковий графік]", fontsize=10, ha="center")
 
-# Форма для додавання видатків (динамічна таблиця)
-st.subheader("➕ Додати нові видатки")
+# Section: Net Profit Trend
+ax.text(1, 5, "📉 Чистий прибуток по місяцях", fontsize=12, fontweight="bold")
+ax.add_patch(plt.Rectangle((1, 3.2), 8, 1.5, fill=True, color="lightgray", alpha=0.3))  # Placeholder for line chart
+ax.text(5, 4, "[Графік чистого прибутку]", fontsize=10, ha="center")
 
-if "new_expenses" not in st.session_state:
-    st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
+# Summary Section
+ax.text(1, 2.2, "📊 Загальні показники:", fontsize=12, fontweight="bold")
+ax.text(1, 1.8, "Доходи: [5000 zł]", fontsize=10, bbox=dict(facecolor="lightgray", edgecolor="black"))
+ax.text(4, 1.8, "Витрати: [3500 zł]", fontsize=10, bbox=dict(facecolor="lightgray", edgecolor="black"))
+ax.text(7, 1.8, "Прибуток: [1500 zł]", fontsize=10, bbox=dict(facecolor="lightgray", edgecolor="black"))
 
-to_remove = []
-
-for i, exp in enumerate(st.session_state.new_expenses):
-    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-    name = col1.text_input(f"Назва {i+1}", value=exp["name"], key=f"new_name_{i}")
-    amount = col2.text_input(f"Сума {i+1} (zł)", value=str(exp["amount"]), key=f"new_amount_{i}")
-    date = col3.date_input(f"Дата {i+1}", value=datetime.strptime(exp["date"], "%Y-%m-%d"), key=f"new_date_{i}")
-    
-    if name.strip() and amount.strip():  # If filled, prepare for the next entry
-        if i == len(st.session_state.new_expenses) - 1:
-            st.session_state.new_expenses.append({"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")})
-
-    try:
-        amount = round(float(amount.replace("zł", "").strip()) / 10) * 10
-    except ValueError:
-        amount = None
-        st.error(f"Помилка у рядку {i+1}: Сума повинна бути числом.")
-
-    st.session_state.new_expenses[i] = {"name": name, "amount": amount, "date": date.strftime("%Y-%m-%d")}
-
-    delete_button = col4.button("❌", key=f"remove_{i}")
-    if delete_button:
-        to_remove.append(i)
-
-# Видалення порожніх записів
-for index in sorted(to_remove, reverse=True):
-    del st.session_state.new_expenses[index]
-
-# Кнопка для збереження видатків
-if st.button("💾 Зберегти видатки"):
-    valid_expenses = [exp for exp in st.session_state.new_expenses if exp["name"] and exp["amount"]]
-    
-    if valid_expenses:
-        st.session_state.expenses.extend(valid_expenses)
-        save_expenses(valid_expenses)
-        st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
-        st.success("✅ Видатки збережено!")
-        st.rerun()  # Оновлення сторінки після додавання
-
-# Податок
-st.subheader("Податок:")
-tax_percentage = st.number_input("Введіть відсоток податку:", min_value=0.0, max_value=100.0, value=5.0, step=0.5)
-tax_amount = total_expenses * (tax_percentage / 100) if total_expenses > 0 else 0
-st.write(f"Податок ({tax_percentage}%): {tax_amount:.2f} zł" if total_expenses > 0 else "Податок буде розраховано після додавання видатків.")
-
-# Чистий заробіток
-st.subheader("Чистий заробіток:")
-income = st.number_input("Введіть щомісячний дохід (злотих):", min_value=0.0, step=100.0)
-
-# Чистий прибуток (динамічне оновлення)
-net_profit = income - total_expenses - tax_amount
-st.write(f"💰 Чистий прибуток: {net_profit:.2f} zł")
+plt.show()
