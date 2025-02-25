@@ -36,20 +36,30 @@ with col2:
 st.subheader("➕ Додати нові видатки")
 
 if "new_expenses" not in st.session_state:
-    st.session_state.new_expenses = [{"name": "", "amount": 0.0, "date": datetime.today().strftime("%Y-%m-%d")}]
+    st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
 
 to_remove = []
 
 for i, exp in enumerate(st.session_state.new_expenses):
     col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
     name = col1.text_input(f"Назва {i+1}", value=exp["name"], key=f"new_name_{i}")
-    amount = col2.number_input(f"Сума {i+1}", value=exp["amount"], min_value=0.0, format="%.2f", key=f"new_amount_{i}")
+    
+    # 🔹 Обробка поля введення суми
+    amount_input = col2.text_input(f"Сума {i+1}", value=exp["amount"], key=f"new_amount_{i}")
+    
+    if amount_input.strip():  # Якщо введено число
+        try:
+            amount = float(amount_input.replace("zł", "").strip())  # Видаляємо `zł`, якщо є
+            amount_input = f"{amount:.2f} zł"  # Додаємо `zł`
+        except ValueError:
+            st.error(f"Помилка у рядку {i+1}: Сума повинна бути числом.")
+            amount = ""
+    else:
+        amount = ""
+
     date = col3.date_input(f"Дата {i+1}", value=datetime.strptime(exp["date"], "%Y-%m-%d"), key=f"new_date_{i}")
 
-    if name.strip() and amount > 0:  # Якщо поле заповнене, додаємо новий рядок
-        if i == len(st.session_state.new_expenses) - 1:
-            st.session_state.new_expenses.append({"name": "", "amount": 0.0, "date": datetime.today().strftime("%Y-%m-%d")})
-
+    # Збереження введених значень у session_state
     st.session_state.new_expenses[i] = {"name": name, "amount": amount, "date": date.strftime("%Y-%m-%d")}
 
     delete_button = col4.button("❌", key=f"remove_{i}")
@@ -62,18 +72,18 @@ for index in sorted(to_remove, reverse=True):
 
 # Кнопка для збереження видатків
 if st.button("💾 Зберегти видатки"):
-    valid_expenses = [exp for exp in st.session_state.new_expenses if exp["name"] and exp["amount"] > 0]
+    valid_expenses = [exp for exp in st.session_state.new_expenses if exp["name"] and exp["amount"]]
     
     if valid_expenses:
         df_new = pd.DataFrame(valid_expenses)
-        df_new["Сума"] = df_new["amount"]
+        df_new["Сума"] = df_new["amount"].apply(lambda x: float(x.replace("zł", "").strip()) if "zł" in x else float(x))
         df_new["Дата"] = df_new["date"]
         df_new = df_new.drop(columns=["amount", "date"])
         
         df = pd.concat([df, df_new], ignore_index=True)
         df.to_csv(file_name, index=False)
         
-        st.session_state.new_expenses = [{"name": "", "amount": 0.0, "date": datetime.today().strftime("%Y-%m-%d")}]
+        st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
         st.success("✅ Видатки збережено!")
         st.rerun()
 
