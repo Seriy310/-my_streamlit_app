@@ -7,7 +7,7 @@ from datetime import datetime
 st.set_page_config(page_title="Інвестиція в кав'ярню", layout="centered")
 st.title("☕ Інвестиція в кав'ярню")
 
-# 🔹 Завантажуємо дані
+# 🔹 Завантаження даних
 file_name = "expenses_history.csv"
 if not os.path.exists(file_name):
     df = pd.DataFrame(columns=["Назва", "Сума", "Дата"])
@@ -16,9 +16,10 @@ else:
     df = pd.read_csv(file_name)
 
 df["Дата"] = pd.to_datetime(df["Дата"], errors='coerce').dt.date  # Видаляємо години
+df["Сума"] = pd.to_numeric(df["Сума"], errors='coerce').fillna(0.0)  # Гарантовано float
 
-# 📊 Загальна сума витрат
-total_expenses = df["Сума"].sum() if not df.empty else 0
+# 📊 Загальна сума витрат (НЕ заокруглена)
+total_expenses = df["Сума"].sum() if not df.empty else 0.0
 st.subheader(f"📉 Загальна сума видатків: {total_expenses:.2f} zł")
 
 # 📜 Кнопки для переходу на сторінки
@@ -35,25 +36,19 @@ with col2:
 st.subheader("➕ Додати нові видатки")
 
 if "new_expenses" not in st.session_state:
-    st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
+    st.session_state.new_expenses = [{"name": "", "amount": 0.0, "date": datetime.today().strftime("%Y-%m-%d")}]
 
 to_remove = []
 
 for i, exp in enumerate(st.session_state.new_expenses):
     col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
     name = col1.text_input(f"Назва {i+1}", value=exp["name"], key=f"new_name_{i}")
-    amount = col2.text_input(f"Сума {i+1} (zł)", value=str(exp["amount"]), key=f"new_amount_{i}")
+    amount = col2.number_input(f"Сума {i+1} (zł)", value=exp["amount"], min_value=0.0, format="%.2f", key=f"new_amount_{i}")
     date = col3.date_input(f"Дата {i+1}", value=datetime.strptime(exp["date"], "%Y-%m-%d"), key=f"new_date_{i}")
-    
-    if name.strip() and amount.strip():  # Якщо поле заповнене, додаємо новий рядок
-        if i == len(st.session_state.new_expenses) - 1:
-            st.session_state.new_expenses.append({"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")})
 
-    try:
-        amount = round(float(amount.replace("zł", "").strip()) / 10) * 10
-    except ValueError:
-        amount = None
-        st.error(f"Помилка у рядку {i+1}: Сума повинна бути числом.")
+    if name.strip() and amount > 0:  # Якщо поле заповнене, додаємо новий рядок
+        if i == len(st.session_state.new_expenses) - 1:
+            st.session_state.new_expenses.append({"name": "", "amount": 0.0, "date": datetime.today().strftime("%Y-%m-%d")})
 
     st.session_state.new_expenses[i] = {"name": name, "amount": amount, "date": date.strftime("%Y-%m-%d")}
 
@@ -67,7 +62,7 @@ for index in sorted(to_remove, reverse=True):
 
 # Кнопка для збереження видатків
 if st.button("💾 Зберегти видатки"):
-    valid_expenses = [exp for exp in st.session_state.new_expenses if exp["name"] and exp["amount"]]
+    valid_expenses = [exp for exp in st.session_state.new_expenses if exp["name"] and exp["amount"] > 0]
     
     if valid_expenses:
         df_new = pd.DataFrame(valid_expenses)
@@ -78,14 +73,14 @@ if st.button("💾 Зберегти видатки"):
         df = pd.concat([df, df_new], ignore_index=True)
         df.to_csv(file_name, index=False)
         
-        st.session_state.new_expenses = [{"name": "", "amount": "", "date": datetime.today().strftime("%Y-%m-%d")}]
+        st.session_state.new_expenses = [{"name": "", "amount": 0.0, "date": datetime.today().strftime("%Y-%m-%d")}]
         st.success("✅ Видатки збережено!")
         st.rerun()
 
 # 📉 Податковий розрахунок
 st.subheader("📉 Податок")
 tax_percentage = st.number_input("Введіть відсоток податку:", min_value=0.0, max_value=100.0, value=5.0, step=0.5)
-tax_amount = total_expenses * (tax_percentage / 100) if total_expenses > 0 else 0
+tax_amount = total_expenses * (tax_percentage / 100) if total_expenses > 0 else 0.0
 st.write(f"Податок ({tax_percentage}%): {tax_amount:.2f} zł" if total_expenses > 0 else "Податок буде розраховано після додавання видатків.")
 
 # 💰 Чистий прибуток
