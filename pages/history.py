@@ -7,13 +7,14 @@ st.title("📜 Історія видатків")
 
 file_name = "expenses_history.csv"
 
-# Завантажуємо дані з файлу
-if os.path.exists(file_name):
-    df = pd.read_csv(file_name)
-    df["Дата"] = pd.to_datetime(df["Дата"]).dt.date  # Приховуємо години
-else:
-    st.write("Наразі історія видатків порожня.")
+# Якщо файл не існує – створюємо його
+if not os.path.exists(file_name):
     df = pd.DataFrame(columns=["Назва", "Сума", "Дата"])
+    df.to_csv(file_name, index=False)  # Створюємо пустий CSV
+else:
+    df = pd.read_csv(file_name)
+
+df["Дата"] = pd.to_datetime(df["Дата"], errors='coerce').dt.date  # Приховуємо години
 
 # 🔹 Фільтрація за датою
 st.subheader("📅 Фільтрація за датою")
