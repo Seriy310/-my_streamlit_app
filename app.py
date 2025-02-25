@@ -49,7 +49,7 @@ for i, exp in enumerate(st.session_state.new_expenses):
     
     if amount_input.strip():  # Якщо введено число
         try:
-            amount = float(amount_input.replace("zł", "").strip())  # Видаляємо `zł`, якщо є
+            amount = float(str(amount_input).replace("zł", "").strip())  # Видаляємо `zł`, якщо є
             amount_input = f"{amount:.2f} zł"  # Додаємо `zł`
         except ValueError:
             st.error(f"Помилка у рядку {i+1}: Сума повинна бути числом.")
@@ -76,7 +76,10 @@ if st.button("💾 Зберегти видатки"):
     
     if valid_expenses:
         df_new = pd.DataFrame(valid_expenses)
-        df_new["Сума"] = df_new["amount"].apply(lambda x: float(x.replace("zł", "").strip()) if "zł" in x else float(x))
+        
+        # 🔹 Виправлений код: Гарантовано працює
+        df_new["Сума"] = df_new["amount"].apply(lambda x: float(str(x).replace("zł", "").strip()))
+        
         df_new["Дата"] = df_new["date"]
         df_new = df_new.drop(columns=["amount", "date"])
         
