@@ -43,7 +43,7 @@ to_remove = []
 for i, exp in enumerate(st.session_state.new_expenses):
     col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
     name = col1.text_input(f"Назва {i+1}", value=exp["name"], key=f"new_name_{i}")
-    amount = col2.number_input(f"Сума {i+1} (zł)", value=exp["amount"], min_value=0.0, format="%.2f", key=f"new_amount_{i}")
+    amount = col2.number_input(f"Сума {i+1}", value=exp["amount"], min_value=0.0, format="%.2f", key=f"new_amount_{i}")
     date = col3.date_input(f"Дата {i+1}", value=datetime.strptime(exp["date"], "%Y-%m-%d"), key=f"new_date_{i}")
 
     if name.strip() and amount > 0:  # Якщо поле заповнене, додаємо новий рядок
