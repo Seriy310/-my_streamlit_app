@@ -1,4 +1,3 @@
-streamlit
-pandas
-matplotlib
-numpy
+git add requirements.txt
+git commit -m "Додав файл requirements.txt"
+git push origin main
